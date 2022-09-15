@@ -1,34 +1,13 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 
 	"assignment2/structs"
 
 	"github.com/gin-gonic/gin"
 )
-
-func (idb *InDB) GetOrder(c *gin.Context) {
-	var (
-		order  structs.Order
-		result gin.H
-	)
-
-	order, err := idb.Orderepository.GetOrderByID()
-	if err != nil {
-		result = gin.H{
-			"result": err.Error(),
-			"count":  0,
-		}
-	} else {
-		result = gin.H{
-			"result": order,
-			"count":  1,
-		}
-	}
-	c.JSON(http.StatusOK, result)
-
-}
 
 func (idb *InDB) GetOrders(c *gin.Context) {
 	var (
@@ -52,17 +31,17 @@ func (idb *InDB) GetOrders(c *gin.Context) {
 }
 
 func (idb *InDB) CreateOrder(c *gin.Context) {
-	var (
-		order  structs.Order
-		result gin.H
-	)
-	customername := c.PostForm("Customer_Name")
-	items := c.PostForm("Items")
-	order.Customer_Name = customername
-	order.Items = items
-	idb.Orderepository.Create()
-	result = gin.H{
-		"result": order,
+	var result gin.H
+	var order structs.Order
+	if err := c.ShouldBind(&order); err != nil {
+		c.JSON(http.StatusBadRequest, result)
+		return
+	}
+	fmt.Println(order)
+	order, err := idb.Orderepository.Create(order)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, result)
+		return
 	}
 
 	c.JSON(http.StatusOK, result)
@@ -70,15 +49,13 @@ func (idb *InDB) CreateOrder(c *gin.Context) {
 }
 
 func (idb *InDB) UpdateOrder(c *gin.Context) {
-
 	customername := c.PostForm("Customer_Name")
-	items := c.PostForm("Items")
 	var (
 		order    structs.Order
 		neworder structs.Order
 		result   gin.H
 	)
-	order, err := idb.Orderepository.GetOrderByID()
+	order, err := idb.Orderepository.FindByID(int(order.ID))
 	if err != nil {
 		result = gin.H{
 			"result": "data not found",
@@ -86,8 +63,7 @@ func (idb *InDB) UpdateOrder(c *gin.Context) {
 	}
 
 	neworder.Customer_Name = customername
-	neworder.Items = items
-	order, err = idb.Orderepository.Update()
+	order, err = idb.Orderepository.Update(order)
 	if err != nil {
 		result = gin.H{
 			"result": "update failed",
@@ -106,13 +82,13 @@ func (idb *InDB) DeleteOrder(c *gin.Context) {
 		result gin.H
 	)
 
-	order, err := idb.Orderepository.GetOrderByID()
+	order, err := idb.Orderepository.FindByID(int(order.ID))
 	if err != nil {
 		result = gin.H{
 			"result": "data not found",
 		}
 	}
-	order, err = idb.Orderepository.Delete()
+	order, err = idb.Orderepository.Delete(order)
 	if err != nil {
 		result = gin.H{
 			"result": "delete failed",
